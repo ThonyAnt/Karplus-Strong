@@ -140,20 +140,6 @@ void KarplusStrong1AudioProcessor::processBlock(juce::AudioBuffer<float>& buffer
         buffer.clear(i, 0, buffer.getNumSamples());
     }
 
-    int time;
-    juce::MidiMessage m;
-    for (juce::MidiBuffer::Iterator i(midiMessages); i.getNextEvent(m, time);)
-    {
-        if (m.isNoteOn())
-        {
-            // Assuming you have a method to calculate delay samples based on the MIDI pitch
-            double freq = juce::MidiMessage::getMidiNoteInHertz(m.getNoteNumber(), 440.0);
-            setDelaySamples(calculateDelaySamples(freq));
-            fillBufferWithNoise();
-            writePosition = 0;
-        }
-    }
-
     // Shared parameter values fetched once per block
     int delaySamples = *apvts.getRawParameterValue("Delay Samples");
     float currentFeedback = *apvts.getRawParameterValue("Feedback");
@@ -169,6 +155,8 @@ void KarplusStrong1AudioProcessor::processBlock(juce::AudioBuffer<float>& buffer
             auto* channelData = buffer.getWritePointer(channel);
             auto* delayData = delayBuffer.getWritePointer(channel);
 
+            float inputSample = channelData[sample];
+
             // Read from the delay buffer
             float out = delayData[readPosition];
 
@@ -176,7 +164,7 @@ void KarplusStrong1AudioProcessor::processBlock(juce::AudioBuffer<float>& buffer
             float nextSample = (out + delayData[(readPosition - 1 + delayBufferSize) % delayBufferSize]) * 0.5;
 
             // Update the delay buffer with feedback
-            delayData[writePosition] = nextSample * currentFeedback;
+            delayData[writePosition] = (nextSample * currentFeedback) + (inputSample * (1.0f - currentFeedback));
 
             // Output the processed sample
             channelData[sample] = out;
