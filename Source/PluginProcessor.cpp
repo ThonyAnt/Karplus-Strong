@@ -142,6 +142,7 @@ void KarplusStrong1AudioProcessor::processBlock(juce::AudioBuffer<float>& buffer
 
     // Shared parameter values fetched once per block
     int delaySamples = *apvts.getRawParameterValue("Delay Samples");
+    float color = *apvts.getRawParameterValue("Color");
     float currentFeedback = *apvts.getRawParameterValue("Feedback");
 
     // Process each sample in the block
@@ -161,11 +162,11 @@ void KarplusStrong1AudioProcessor::processBlock(juce::AudioBuffer<float>& buffer
             float out = delayData[readPosition];
 
             // Apply a simple averaging filter (low-pass) to simulate the damping of the string
-            float nextSample = (out + delayData[(readPosition - 1 + delayBufferSize) % delayBufferSize]) * 0.5;
+            float nextSample = out * color + delayData[(readPosition - 1 + delayBufferSize) % delayBufferSize] * (1.0f - color);
 
             // Update the delay buffer with feedback
             delayData[writePosition] = (nextSample * currentFeedback) + (inputSample * (1.0f - currentFeedback));
-
+       
             // Output the processed sample
             channelData[sample] = out;
         }
@@ -210,11 +211,17 @@ juce::AudioProcessorValueTreeState::ParameterLayout KarplusStrong1AudioProcessor
 
     layout.add(std::make_unique<AudioParameterFloat>("Feedback",
         "Feedback",
-        NormalisableRange<float>(-1, 1, 0.001, 1), 0.998));
+        NormalisableRange<float>(-1, 1, 0.0001, 1), 0.998));
+
+    layout.add(std::make_unique<AudioParameterFloat>("Color",
+        "Color",
+        NormalisableRange<float>(0, 1, 0.0001, 1), 0.5));
 
     layout.add(std::make_unique<AudioParameterInt>("Delay Samples",
         "Delay Samples",
         1, 10000, 200));
+
+
 
 
     return layout;
