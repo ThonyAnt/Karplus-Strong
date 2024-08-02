@@ -157,20 +157,11 @@ void KarplusStrong1AudioProcessor::processBlock(juce::AudioBuffer<float>& buffer
             auto* delayData = delayBuffer.getWritePointer(channel);
 
             float inputSample = channelData[sample];
-            float out = delayData[readPosition];
+            
+            float out = inputSample + currentFeedback * (delayData[readPosition] + delayData[(readPosition - 1 + delayBufferSize) % delayBufferSize]) / 2;
 
-            //TODO: Color doesn't really work
-            // Apply a simple averaging filter (low-pass) to simulate the damping of the string
-            float nextSample = out * color + delayData[(readPosition - 1 + delayBufferSize) % delayBufferSize] * (1.0f - color);
+            delayData[writePosition] = out;
 
-            //TODO: Current feedback algorithm kills transients. 
-            //TODO: Inconsistent volume with different feedback values.
-            //TODO: Extended KS
-   
-            // Update the delay buffer with feedback
-            delayData[writePosition] = (nextSample * currentFeedback) + (inputSample * (1.0f - currentFeedback));
-       
-            // Output the processed sample
             channelData[sample] = out;
         }
 
@@ -214,7 +205,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout KarplusStrong1AudioProcessor
 
     layout.add(std::make_unique<AudioParameterFloat>("Feedback",
         "Feedback",
-        NormalisableRange<float>(-1, 1, 0.0001, 1), 0.6));
+        NormalisableRange<float>(-1, 1, 0.0001, 1), 0.1));
 
     layout.add(std::make_unique<AudioParameterFloat>("Color",
         "Color",
@@ -245,7 +236,7 @@ void KarplusStrong1AudioProcessor::fillBufferWithNoise()
         {
             writePointer[i] = random.nextFloat() * 2.0f - 1.0f; // Fill with noise between -1 and 1
         }
-    }
+    } 
 }
 
 int KarplusStrong1AudioProcessor::calculateDelaySamples(double freq)
