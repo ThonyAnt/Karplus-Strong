@@ -10,11 +10,20 @@
 #include "PluginEditor.h"
 
 //==============================================================================
-KarplusStrong1AudioProcessorEditor::KarplusStrong1AudioProcessorEditor (KarplusStrong1AudioProcessor& p)
-    : AudioProcessorEditor (&p), audioProcessor (p)
+KarplusStrong1AudioProcessorEditor::KarplusStrong1AudioProcessorEditor(KarplusStrong1AudioProcessor& p)
+    : AudioProcessorEditor(&p), audioProcessor(p),
+    feedbackAttachment(*audioProcessor.apvts.getParameter("Feedback"), feedbackSliderRelay, audioProcessor.apvts.undoManager),
+    dryGainAttachment(*audioProcessor.apvts.getParameter("Dry Gain"), dryGainSliderRelay, audioProcessor.apvts.undoManager),
+    wetGainAttachment(*audioProcessor.apvts.getParameter("Wet Gain"), wetGainSliderRelay, audioProcessor.apvts.undoManager),
+    colorAttachment(*audioProcessor.apvts.getParameter("Color"), colorSliderRelay, audioProcessor.apvts.undoManager),
+    delaySamplesAttachment(*audioProcessor.apvts.getParameter("Delay Samples"), delaySamplesSliderRelay, audioProcessor.apvts.undoManager),
+    noteNumberAttachment(*audioProcessor.apvts.getParameter("Note Number"), noteNumberSliderRelay, audioProcessor.apvts.undoManager)
 {
-    // Make sure that before the constructor has finished, you've set the
-    // editor's size to whatever you need it to be.
+    addAndMakeVisible(webComponent);
+    webComponent.goToURL(localDevServerAddress);
+
+    setResizable(true, true);
+
     setSize (400, 300);
 }
 
@@ -25,16 +34,10 @@ KarplusStrong1AudioProcessorEditor::~KarplusStrong1AudioProcessorEditor()
 //==============================================================================
 void KarplusStrong1AudioProcessorEditor::paint (juce::Graphics& g)
 {
-    // (Our component is opaque, so we must completely fill the background with a solid colour)
     g.fillAll (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId));
-
-    g.setColour (juce::Colours::white);
-    g.setFont (juce::FontOptions (15.0f));
-    g.drawFittedText ("Hello World!", getLocalBounds(), juce::Justification::centred, 1);
 }
 
 void KarplusStrong1AudioProcessorEditor::resized()
 {
-    // This is generally where you'll want to lay out the positions of any
-    // subcomponents in your editor..
+    webComponent.setBounds(getLocalBounds());
 }

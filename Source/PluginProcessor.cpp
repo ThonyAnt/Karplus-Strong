@@ -190,7 +190,8 @@ bool KarplusStrong1AudioProcessor::hasEditor() const
 
 juce::AudioProcessorEditor* KarplusStrong1AudioProcessor::createEditor()
 {
-    return new juce::GenericAudioProcessorEditor(*this);
+    //return new juce::GenericAudioProcessorEditor(*this);
+    return new KarplusStrong1AudioProcessorEditor(*this);
 }
 
 //==============================================================================
