@@ -2,7 +2,7 @@
 
 <JUCERPROJECT id="Gzp9zJ" name="KarplusStrong1" projectType="audioplug" useAppConfig="0"
               addUsingNamespaceToJuceHeader="0" jucerFormatVersion="1" pluginCharacteristicsValue="pluginWantsMidiIn"
-              pluginFormats="buildAU,buildStandalone,buildVST3">
+              pluginFormats="buildAU,buildStandalone,buildVST3" pluginCode="Gzp7">
   <MAINGROUP id="dnyOYh" name="KarplusStrong1">
     <GROUP id="{6766458E-17AA-F2C9-5A65-A86C782DC6D6}" name="Source">
       <FILE id="BGMwbs" name="PluginProcessor.cpp" compile="1" resource="0"

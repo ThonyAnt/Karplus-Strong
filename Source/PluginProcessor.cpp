@@ -144,6 +144,8 @@ void KarplusStrong1AudioProcessor::processBlock(juce::AudioBuffer<float>& buffer
     int delaySamples = *apvts.getRawParameterValue("Delay Samples");
     float color = *apvts.getRawParameterValue("Color");
     float currentFeedback = *apvts.getRawParameterValue("Feedback");
+    float dryGain = *apvts.getRawParameterValue("Dry Gain");
+    float wetGain = *apvts.getRawParameterValue("Wet Gain");
 
     // Process each sample in the block
     for (int sample = 0; sample < buffer.getNumSamples(); ++sample) {
@@ -155,14 +157,13 @@ void KarplusStrong1AudioProcessor::processBlock(juce::AudioBuffer<float>& buffer
         for (int channel = 0; channel < totalNumInputChannels; ++channel) {
             auto* channelData = buffer.getWritePointer(channel);
             auto* delayData = delayBuffer.getWritePointer(channel);
-
-            float inputSample = channelData[sample];
+            float dry = channelData[sample];
             
-            float out = inputSample + currentFeedback * (delayData[readPosition] + delayData[(readPosition - 1 + delayBufferSize) % delayBufferSize]) / 2;
+            float total = dry + currentFeedback * (delayData[readPosition] + delayData[(readPosition - 1 + delayBufferSize) % delayBufferSize]) / 2;
+            delayData[writePosition] = total;
+            float wet = total - dry;
 
-            delayData[writePosition] = out;
-
-            channelData[sample] = out;
+            channelData[sample] = wet * juce::Decibels::decibelsToGain(wetGain, -128.f) + dry * juce::Decibels::decibelsToGain(dryGain, -128.f);
         }
 
         // Increment and wrap the shared write position once per sample, not per channel
@@ -206,6 +207,14 @@ juce::AudioProcessorValueTreeState::ParameterLayout KarplusStrong1AudioProcessor
     layout.add(std::make_unique<AudioParameterFloat>("Feedback",
         "Feedback",
         NormalisableRange<float>(-1, 1, 0.0001, 1), 0.1));
+
+    layout.add(std::make_unique<AudioParameterFloat>("Dry Gain",
+        "Dry Gain",
+        NormalisableRange<float>(-128, 12, 0.1, 1), 0));
+
+    layout.add(std::make_unique<AudioParameterFloat>("Wet Gain",
+        "Wet Gain",
+        NormalisableRange<float>(-128, 12, 0.1, 1), 0));
 
     layout.add(std::make_unique<AudioParameterFloat>("Color",
         "Color",
