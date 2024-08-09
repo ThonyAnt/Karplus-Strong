@@ -62,6 +62,7 @@ private:
     void fillBufferWithNoise();
     int calculateDelaySamples(double freq);
     void setDelaySamples(int delay);
+    float decayMap(float decay);
 
     juce::AudioBuffer<float> delayBuffer;
 

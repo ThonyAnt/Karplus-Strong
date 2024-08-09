@@ -144,8 +144,14 @@ void KarplusStrong1AudioProcessor::processBlock(juce::AudioBuffer<float>& buffer
     int delaySamples = *apvts.getRawParameterValue("Delay Samples");
     float color = *apvts.getRawParameterValue("Color");
     float currentFeedback = *apvts.getRawParameterValue("Feedback");
+    currentFeedback = decayMap(currentFeedback);
     float dryGain = *apvts.getRawParameterValue("Dry Gain");
     float wetGain = *apvts.getRawParameterValue("Wet Gain");
+    bool squareMode = *apvts.getRawParameterValue("Square Mode");
+
+    if (squareMode) {
+        currentFeedback *= -1;
+    }
 
     // Process each sample in the block
     for (int sample = 0; sample < buffer.getNumSamples(); ++sample) {
@@ -159,7 +165,7 @@ void KarplusStrong1AudioProcessor::processBlock(juce::AudioBuffer<float>& buffer
             auto* delayData = delayBuffer.getWritePointer(channel);
             float dry = channelData[sample];
             
-            float total = dry + currentFeedback * (delayData[readPosition] + delayData[(readPosition - 1 + delayBufferSize) % delayBufferSize]) / 2;
+            float total = dry + currentFeedback * (delayData[readPosition] * color + delayData[(readPosition - 1 + delayBufferSize) % delayBufferSize] * (1 - color));
             delayData[writePosition] = total;
             float wet = total - dry;
 
@@ -206,7 +212,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout KarplusStrong1AudioProcessor
 
     layout.add(std::make_unique<AudioParameterFloat>("Feedback",
         "Feedback",
-        NormalisableRange<float>(-1, 1, 0.0001, 1), 0.1));
+        NormalisableRange<float>(0, 1, 0.0001, 1), 0.1));
 
     layout.add(std::make_unique<AudioParameterFloat>("Dry Gain",
         "Dry Gain",
@@ -214,15 +220,17 @@ juce::AudioProcessorValueTreeState::ParameterLayout KarplusStrong1AudioProcessor
 
     layout.add(std::make_unique<AudioParameterFloat>("Wet Gain",
         "Wet Gain",
-        NormalisableRange<float>(-128, 12, 0.1, 1), 0));
+        NormalisableRange<float>(-128, 12, 0.1, 1), -15));
 
     layout.add(std::make_unique<AudioParameterFloat>("Color",
         "Color",
-        NormalisableRange<float>(0, 1, 0.0001, 1), 0.5));
+        NormalisableRange<float>(0.5, 1, 0.0001, 1), 0.5));
 
     layout.add(std::make_unique<AudioParameterInt>("Delay Samples",
         "Delay Samples",
-        1, 10000, 200));
+        10, 10000, 200));
+
+    layout.add(std::make_unique<AudioParameterBool>("Square Mode", "Square Mode", false));
 
 
 
@@ -269,6 +277,12 @@ void KarplusStrong1AudioProcessor::setDelaySamples(int delay)
         // Set the value, notifying the host
         delaySamplesPointer->setValueNotifyingHost(normalizedDelay);
     }
+}
+
+float KarplusStrong1AudioProcessor::decayMap(float decay)
+{
+    const float denominator = 0.9917;
+    return (1 - std::exp(-4.8 * decay)) / denominator;
 }
 
 
