@@ -141,6 +141,9 @@ void KarplusStrong1AudioProcessor::processBlock(juce::AudioBuffer<float>& buffer
     }
 
     // Shared parameter values fetched once per block
+    double frequency = juce::MidiMessage::getMidiNoteInHertz(*apvts.getRawParameterValue("Note Number"));
+    setDelaySamples(calculateDelaySamples(frequency));
+
     int delaySamples = *apvts.getRawParameterValue("Delay Samples");
     float color = *apvts.getRawParameterValue("Color");
     float currentFeedback = *apvts.getRawParameterValue("Feedback");
@@ -169,7 +172,7 @@ void KarplusStrong1AudioProcessor::processBlock(juce::AudioBuffer<float>& buffer
             delayData[writePosition] = total;
             float wet = total - dry;
 
-            channelData[sample] = wet * juce::Decibels::decibelsToGain(wetGain, -128.f) + dry * juce::Decibels::decibelsToGain(dryGain, -128.f);
+            channelData[sample] = wet * juce::Decibels::decibelsToGain(wetGain, -60.f) + dry * juce::Decibels::decibelsToGain(dryGain, -60.f);
         }
 
         // Increment and wrap the shared write position once per sample, not per channel
@@ -216,11 +219,11 @@ juce::AudioProcessorValueTreeState::ParameterLayout KarplusStrong1AudioProcessor
 
     layout.add(std::make_unique<AudioParameterFloat>("Dry Gain",
         "Dry Gain",
-        NormalisableRange<float>(-128, 12, 0.1, 1), 0));
+        NormalisableRange<float>(-60, 12, 0.1, 1), 0));
 
     layout.add(std::make_unique<AudioParameterFloat>("Wet Gain",
         "Wet Gain",
-        NormalisableRange<float>(-128, 12, 0.1, 1), -15));
+        NormalisableRange<float>(-60, 12, 0.1, 1), -15));
 
     layout.add(std::make_unique<AudioParameterFloat>("Color",
         "Color",
@@ -230,7 +233,13 @@ juce::AudioProcessorValueTreeState::ParameterLayout KarplusStrong1AudioProcessor
         "Delay Samples",
         10, 10000, 200));
 
+    layout.add(std::make_unique<AudioParameterInt>("Note Number",
+        "Note Number",
+        0, 128, 60));
+
     layout.add(std::make_unique<AudioParameterBool>("Square Mode", "Square Mode", false));
+
+    
 
 
 
